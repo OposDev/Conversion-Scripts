@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+url=''
+cookies=''
+video=false
+output=''
+
+while getopts ":u:c:vo:h" arg
+do
+   case "$arg" in
+     "u")
+        url=$OPTARG
+        ;;
+     "c")
+        cookies=$OPTARG
+        ;;
+     "v")
+        video=true
+        ;;
+     "o")
+        output=$OPTARG
+        ;;
+     "h")
+        cat << EOL
+Options:
+         -u: URL
+         -c: Path to cookies.txt file
+         -v: Type of download (Default: false for music)
+         -o: Output file location
+         -h: Display help
+EOL
+        exit
+        ;;
+     ":")
+        echo "ERROR: No argument value for option $OPTARG"
+        exit
+        ;;
+     "?")
+        echo "ERROR: Unknown option $OPTARG"
+        exit
+        ;;
+     "*")
+        echo "ERROR: Unknown error while processing options"
+        exit
+        ;;
+   esac
+done
+
+video() {
+   yt-dlp --cookies $cookies -P $output $url
+}
+
+music() {
+   yt-dlp -x --audio-quality 0 --audio-format flac -o "%(artist)s - %(title)s.%(ext)s" --cookies $cookies -P $output $url
+}
+
+if [ $video == false ]; then
+   music
+else
+   video
+fi
+
+
+
+
