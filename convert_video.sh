@@ -190,6 +190,8 @@ webm_to_mkv_default()
   spacer; green "Finished converting!"
 }
 
+clear
+
 while getopts ":i:o:d:lh" arg
 do
   case "$arg" in

@@ -92,6 +92,11 @@ convert()
   cd "$directory"
   current_dir="${PWD}/"  
  
+  if [[ "$remove_bool" == true ]]; then
+    spacer; red "WARNING: Remove flag set to: $remove_bool!"
+  else
+    spacer; green "Remove flag set to: $remove_bool!"
+  fi
   spacer; cyan "Current file path: $current_dir"
   spacer; cyan "Is this the correct file path? y/n:"
   spacer; read  -n 1 -p "Input:" dir_check; spacer
@@ -127,6 +132,8 @@ delete()
   find . -name "*.${input_format}" -exec rm {} \;
   spacer; green "Finished removing!"
 }
+
+clear
 
 while getopts ":i:o:d:lrh" arg
 do
