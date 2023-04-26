@@ -4,6 +4,7 @@ links_location=""
 RA_location=""
 config_location=""
 download_path=""
+links_total=0
 
 # Adds color functionality to script
 set +x
@@ -70,7 +71,8 @@ check_user_input()
     exit 1
   fi
 
-  spacer; yellow "Current information registered: "
+  spacer; yellow "---------- Current information registered ---------- "
+  yellow "Total # of links: $links_total"
   yellow "- Links file: $links_location"
   yellow "- RedditArchiver file: $RA_location"
   yellow "- RedditArchiver config file: $config_location"
@@ -87,6 +89,37 @@ check_user_input()
     spacer; red "ERROR: Unknown input! Exiting..."
     exit 1
   fi
+}
+
+function process_line()
+{
+  output_text=$(python3 "$RA_location" -c "$config_location" -u "$1" -o "$download_path")
+  tmp_string=$(echo "$output_text" | grep -o 'Filename: [^ ]*' | sed 's/Filename: //g')
+  final_string="${tmp_string%.*}"
+  tmp_sub_dir="$download_path$final_string"
+
+  if [[ -d "$download_path$final_string" ]]; then
+    continue
+  else
+    mkdir "$tmp_sub_dir"
+  fi
+
+  mv "$download_path$tmp_string" "$tmp_sub_dir"
+  
+  gallery-dl "$1" -D "$tmp_sub_dir"
+}
+
+# Downloads & sorts reddit posts
+process_links()
+{
+  links_total=$(wc -l < "$links_location")
+  counter=1
+
+  while IFS='' read -r LineFromFile || [[ -n "${LineFromFile}" ]]; do
+    green "Current link: $counter / $links_total"
+    process_line "$LineFromFile"
+  done < "$links_location"
+
 }
 
 clear
@@ -137,6 +170,7 @@ done
 
 main()
 {
-  
+  check_user_input
+  process_links
 }
 main
