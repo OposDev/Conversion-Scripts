@@ -71,6 +71,8 @@ check_user_input()
     exit 1
   fi
 
+  links_total=$(wc -l < "$links_location")
+
   spacer; yellow "---------- Current information registered ---------- "
   yellow "Total # of links: $links_total"
   yellow "- Links file: $links_location"
@@ -112,7 +114,6 @@ function process_line()
 # Downloads & sorts reddit posts
 process_links()
 {
-  links_total=$(wc -l < "$links_location")
   counter=1
 
   while IFS='' read -r LineFromFile || [[ -n "${LineFromFile}" ]]; do
