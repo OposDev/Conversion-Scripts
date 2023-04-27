@@ -162,7 +162,7 @@ check_filepath()
 mkv_to_mp4_default()
 {
   spacer; yellow "Converting .MKV to .MP4..."
-  for i in *.mkv; do ffmpeg -hwaccel cuda -i "$i" -vcodec copy -acodec copy -scodec mov_text "${i%.*}.mp4"; done
+  find . -type f -iname "*.mkv" -print0 | xargs -0 -I{} ffmpeg -hwaccel cuda -i "{}" -vcodec copy -acodec copy -scodec mov_text "{}.mp4"
   spacer; green "Finished converting!"
 }
 
@@ -170,7 +170,7 @@ mkv_to_mp4_default()
 mkv_to_mp4_flac()
 {
   spacer; yellow "Converting .MKV to .MP4 with FLAC audio..."
-  for i in *.mkv; do ffmpeg -hwaccel cuda -i "$i" -map 0 -c:v copy -c:a aac -c:s mov_text "${i%.*}.mp4"; done
+  find . -type f -iname "*.mkv" -print0 | xargs -0 -I{} ffmpeg -hwaccel cuda -i "{}" -map 0 -c:v copy -c:a aac -c:s mov_text "{}.mp4"
   spacer; green "Finished converting!"
 }
 
@@ -178,7 +178,7 @@ mkv_to_mp4_flac()
 mp4_to_mkv_default()
 {
   spacer; yellow "Converting .MP4 to .MKV..."
-  for i in *.mp4; do ffmpeg -hwaccel cuda -i "$i" -vcodec copy -acodec copy "${i%.*}.mkv"; done
+  find . -type f -iname "*.mp4" -print0 | xargs -0 -I{} ffmpeg -hwaccel cuda -i "{}" -vcodec copy -acodec copy "{}.mkv"
   spacer; green "Finished converting!"
 }
 
@@ -186,7 +186,7 @@ mp4_to_mkv_default()
 webm_to_mkv_default()
 {
   spacer; yellow "Converting .WebM to .MKV..."
-  for i in *.webm; do ffmpeg -hwaccel cuda -i "$i" -c copy "${i%.*}.mkv"; done
+  find . -type f -iname "*.webm" -print0 | xargs -0 -I{} ffmpeg -hwaccel cuda -i "{}" -c copy "{}.mkv"
   spacer; green "Finished converting!"
 }
 
