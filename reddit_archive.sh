@@ -98,6 +98,7 @@ function process_line()
   output_text=$(python3 "$RA_location" -c "$config_location" -u "$1" -o "$download_path")
   tmp_string=$(echo "$output_text" | grep -o 'Filename: [^ ]*' | sed 's/Filename: //g')
   final_string="${tmp_string%.*}"
+  tmp_subreddit_dir="$download_path${final_string%%-*}"
   tmp_sub_dir="$download_path$final_string"
 
   if [[ -d "$download_path$final_string" ]]; then
@@ -109,6 +110,14 @@ function process_line()
   mv "$download_path$tmp_string" "$tmp_sub_dir"
   
   gallery-dl "$1" -D "$tmp_sub_dir"
+
+  if [[ -d "$download_path$tmp_subreddit_dir" ]]; then
+    continue
+  else
+    mkdir "$tmp_subreddit_dir"
+  fi
+
+  mv "$tmp_sub_dir" "$tmp_subreddit_dir"
 }
 
 # Downloads & sorts reddit posts
@@ -119,6 +128,7 @@ process_links()
   while IFS='' read -r LineFromFile || [[ -n "${LineFromFile}" ]]; do
     green "Current link: $counter / $links_total"
     process_line "$LineFromFile"
+    ((counter+=1))
   done < "$links_location"
 
 }
