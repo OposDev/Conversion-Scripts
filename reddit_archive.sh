@@ -111,7 +111,7 @@ function process_line()
   
   gallery-dl "$1" -D "$tmp_sub_dir"
 
-  if [[ -d "$download_path$tmp_subreddit_dir" ]]; then
+  if [[ -d "$tmp_subreddit_dir" ]]; then
     continue
   else
     mkdir "$tmp_subreddit_dir"
