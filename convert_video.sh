@@ -215,7 +215,7 @@ Options:
          -i: Input format
          -o: Output format
          -l: List format options
-         -d: Directory to format ( WARNING: Directory is NOT recursive! )
+         -d: Directory to format ( WARNING: Directory is recursive! )
          -h: Display help
 EOL
         spacer
