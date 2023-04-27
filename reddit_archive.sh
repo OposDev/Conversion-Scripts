@@ -101,9 +101,7 @@ function process_line()
   tmp_subreddit_dir="$download_path${final_string%%-*}"
   tmp_sub_dir="$download_path$final_string"
 
-  if [[ -d "$download_path$final_string" ]]; then
-    continue
-  else
+  if ! [[ -d "$download_path$final_string" ]]; then
     mkdir "$tmp_sub_dir"
   fi
 
@@ -111,9 +109,7 @@ function process_line()
   
   gallery-dl "$1" -D "$tmp_sub_dir"
 
-  if [[ -d "$tmp_subreddit_dir" ]]; then
-    continue
-  else
+  if ! [[ -d "$tmp_subreddit_dir" ]]; then
     mkdir "$tmp_subreddit_dir"
   fi
 
