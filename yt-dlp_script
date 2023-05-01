@@ -5,6 +5,22 @@ cookies=''
 video=false
 output=''
 
+video_with_cookies() {
+   yt-dlp -f bestvideo --cookies $cookies -P $output $url
+}
+
+video() {
+   yt-dlp -f bestvideo -P $output $url
+}
+
+music_with_cookies() {
+   yt-dlp -f bestaudio -x --audio-quality 0 --audio-format flac -o "%(artist)s - %(title)s.%(ext)s" --cookies $cookies -P $output $url
+}
+
+music() {
+   yt-dlp -f bestaudio -x --audio-quality 0 --audio-format flac -o "%(artist)s - %(title)s.%(ext)s" -P $output $url
+}
+
 while getopts ":u:c:vo:h" arg
 do
    case "$arg" in
@@ -46,36 +62,23 @@ EOL
    esac
 done
 
-video_with_cookies() {
-   yt-dlp --cookies $cookies -P $output $url
-}
-
-video() {
-   yt-dlp -P $output $url
-}
-
-music_with_cookies() {
-   yt-dlp -x --audio-quality 0 --audio-format flac -o "%(artist)s - %(title)s.%(ext)s" --cookies $cookies -P $output $url
-}
-
-music() {
-   yt-dlp -x --audio-quality 0 --audio-format flac -o "%(artist)s - %(title)s.%(ext)s" -P $output $url
-}
-
-if [ $video == false ]; then
-  if [[ $cookies == "" ]]; then
-    music
+main()
+{
+  if [ $video == false ]; then
+    if [[ $cookies == "" ]]; then
+      music
+    else
+      music_with_cookies
+    fi
   else
-    music_with_cookies
+    if [[ $cookies == "" ]]; then
+      video
+    else
+      video_with_cookies
+    fi
   fi
-else
-  if [[ $cookies == "" ]]; then
-    video
-  else
-    video_with_cookies
-  fi
-fi
+}
 
-
+main
 
 
