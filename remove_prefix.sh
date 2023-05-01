@@ -41,7 +41,7 @@ replace()
 {
   dir_check="n"
 
-  cd $directory
+  cd "$directory"
   current_dir="${PWD}/"  
   
   spacer; cyan "Current file path: $current_dir"
@@ -58,8 +58,15 @@ replace()
     exit
   fi
 
-  # Remove "NA - " from filenames
-  for filename in ./*; do mv "./$filename" "./$(echo "$filename" | sed -e 's/NA\ -\ //g')";  done
+  # Remove "NA - " prefix from file names
+  #for filename in ./*; do mv "./$filename" "./$(echo "$filename" | sed -e 's/-\ //g')";  done
+
+  # Remove '[0-09][0-9] - ' prefix from file names
+  for file in ??\ -\ *; do
+    newname=$(echo "$file" | sed 's/^[0-9][0-9]\ -\ //')
+    mv "$file" "$newname"
+  done
+
   spacer; green "Finished processing!"
 }
 
