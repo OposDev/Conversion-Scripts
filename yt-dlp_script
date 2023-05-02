@@ -4,21 +4,29 @@ url=''
 cookies=''
 video=false
 output=''
+is_file=false
 
-video_with_cookies() {
-   yt-dlp -f bestvideo --cookies $cookies -P $output $url
+check_for_file()
+{
+  if echo "$url" | grep -q '.txt' && ! echo "$url" | grep -q "https://" ; then
+    is_file=true
+  fi
 }
 
-video() {
-   yt-dlp -f bestvideo -P $output $url
+function video_with_cookies() {
+   yt-dlp -f bestvideo --cookies "$cookies" -P "$output" "$1"
 }
 
-music_with_cookies() {
-   yt-dlp -f bestaudio -x --audio-quality 0 --audio-format flac -o "%(artist)s - %(title)s.%(ext)s" --cookies $cookies -P $output $url
+function video() {
+   yt-dlp -f bestvideo -P "$output" "$1"
 }
 
-music() {
-   yt-dlp -f bestaudio -x --audio-quality 0 --audio-format flac -o "%(artist)s - %(title)s.%(ext)s" -P $output $url
+function music_with_cookies() {
+   yt-dlp -f bestaudio -x --audio-quality 0 --audio-format flac -o "%(artist)s - %(title)s.%(ext)s" --cookies "$cookies" -P "$output" "$1"
+}
+
+function music() {
+   yt-dlp -f bestaudio -x --audio-quality 0 --audio-format flac -o "%(artist)s - %(title)s.%(ext)s" -P "$output" "$1"
 }
 
 while getopts ":u:c:vo:h" arg
@@ -39,7 +47,7 @@ do
      "h")
         cat << EOL
 Options:
-         -u: URL
+         -u: URL (Can also accept .txt files containing URLs)
          -c: Path to cookies.txt file (Optional)
          -v: Type of download (Default: false for music)[Optional]
          -o: Output file location
@@ -64,17 +72,38 @@ done
 
 main()
 {
-  if [ $video == false ]; then
-    if [[ $cookies == "" ]]; then
-      music
-    else
-      music_with_cookies
-    fi
+  check_for_file
+
+  if [[ "$is_file" == true ]]; then
+    while IFS='' read -r LineFromFile || [[ -n "${LineFromFile}" ]]; do
+      tmp_url="$LineFromFile"
+      if [ $video == false ]; then
+        if [[ $cookies == "" ]]; then
+          music "$tmp_url"
+        else
+          music_with_cookies "$tmp_url"
+        fi
+      else
+        if [[ $cookies == "" ]]; then
+          video "$tmp_url"
+        else
+          video_with_cookies "$tmp_url"
+        fi
+      fi
+    done < "$url"
   else
-    if [[ $cookies == "" ]]; then
-      video
+    if [ $video == false ]; then
+      if [[ $cookies == "" ]]; then
+        music
+      else
+        music_with_cookies
+      fi
     else
-      video_with_cookies
+      if [[ $cookies == "" ]]; then
+        video
+      else
+        video_with_cookies
+      fi
     fi
   fi
 }
