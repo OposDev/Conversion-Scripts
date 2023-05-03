@@ -14,11 +14,11 @@ check_for_file()
 }
 
 function video_with_cookies() {
-   yt-dlp -f bestvideo --cookies "$cookies" -P "$output" "$1"
+   yt-dlp -f bestvideo --cookies "$cookies" -o -o "%(artist)s - %(title)s.%(ext)s" -P "$output" "$1"
 }
 
 function video() {
-   yt-dlp -f bestvideo -P "$output" "$1"
+   yt-dlp -f bestvideo -o -o "%(artist)s - %(title)s.%(ext)s" -P "$output" "$1"
 }
 
 function music_with_cookies() {
@@ -94,15 +94,15 @@ main()
   else
     if [ $video == false ]; then
       if [[ $cookies == "" ]]; then
-        music
+        music "$url"
       else
-        music_with_cookies
+        music_with_cookies "$url"
       fi
     else
       if [[ $cookies == "" ]]; then
-        video
+        video "$url"
       else
-        video_with_cookies
+        video_with_cookies "$url"
       fi
     fi
   fi

@@ -2,6 +2,7 @@
 
 directory=""
 current_dir=""
+prefix=false
 
 spacer()
 {
@@ -58,21 +59,27 @@ replace()
     exit
   fi
 
-  # Remove "NA - " prefix from file names
-  #for filename in ./*; do mv "./$filename" "./$(echo "$filename" | sed -e 's/-\ //g')";  done
 
-  # Remove '[0-09][0-9] - ' prefix from file names
-  for file in ??\ -\ *; do
-    newname=$(echo "$file" | sed 's/^[0-9][0-9]\ -\ //')
-    mv "$file" "$newname"
-  done
-
+  if [[ "$prefix" == false ]]; then
+    # Remove "NA - " prefix from file names
+    for filename in ./*; do mv "./$filename" "./$(echo "$filename" | sed -e 's/NA\ -\ //g')";  done
+  else
+    # Remove '[0-09][0-9] - ' prefix from file names
+    for file in ??\ -\ *; do
+      newname=$(echo "$file" | sed 's/^[0-9][0-9]\ -\ //')
+      mv "$file" "$newname"
+    done
+  fi
+  
   spacer; green "Finished processing!"
 }
 
-while getopts ":d:h" arg
+while getopts ":c:d:h" arg
 do
   case "$arg" in
+    "c")
+        =$OPTARG
+        ;;
     "d")
         directory=$OPTARG
         ;;
@@ -80,6 +87,7 @@ do
         spacer
         cat << EOL
 Options:
+         -c: Change prefix (Default is NA, alt is XX)
          -d: Directory to format
          -h: Display help
 EOL
