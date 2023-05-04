@@ -1,18 +1,16 @@
 #!/usr/bin/env bash
 
-iput_format=""
-output_format=""
+select=""
 directory=""
 current_dir=""
 
-input_mkv_bool=false
-input_mkv_flac_bool=false
-input_mp4_bool=false
-input_webm_bool=false
-output_mkv_bool=false
-output_mkv_flac_bool=false
-output_mp4_bool=false
-output_webm_bool=false
+declare -i num_cores="$(nproc)"
+major_range=()
+minor_range=()
+declare -i total_lines=0
+declare -i avg_load=0
+m_filepaths="m_filepaths.txt"
+remove=false
 
 spacer()
 {
@@ -53,10 +51,10 @@ list_format()
   spacer
   cat << EOL
 Available Formats:
-                    - mkv
-                    - mkv_flac
-                    - mp4
-                    - webm
+                    1 - mkv -> mp4
+                    2 - mkv_flac -> mp4
+                    3 - mp4 -> mkv
+                    4 - webm -> mkv
 EOL
   spacer
 }
@@ -65,43 +63,17 @@ EOL
 check_input()
 {
   spacer; yellow "Checking input formats..."
-  if [[ "$input_format" == "mkv" || "$input_format" == "MKV" ]]; then
-    input_mkv_bool=true
-    spacer; green "$input_format is a valid format, continuing..."
-  elif [[ "$input_format" == "mkv_flac" || "$input_format" == "MKV_FLAC" ]]; then
-    input_mkv_flac_bool=true
-    spacer; green "$input_format is a valid format, continuing..."
-  elif [[ "$input_format" == "mp4" || "$input_format" == "MP4" ]]; then
-    input_mp4_bool=true
-    spacer; green "$input_format is a valid format, continuing..."
-  elif [[ "$input_format" == "webm" || "$input_format" == "WEBM" ]]; then
-    input_webm_bool=true
-    spacer; green "$input_format is a valid format, continuing..."
+  if [[ $select == "1" ]]; then
+    spacer; green "$select is a valid format, continuing..."
+  elif [[ $select == "2" ]]; then
+    spacer; green "$select is a valid format, continuing..."
+  elif [[ $select == "3" ]]; then
+    spacer; green "$select is a valid format, continuing..."
+  elif [[ $select == "4" ]]; then
+    spacer; green "$select is a valid format, continuing..."
   else
     spacer; red "ERROR: Invalid input format! Exiting..."
-    exit
-  fi
-}
-
-# Checks outputs of user
-check_output()
-{
-  spacer; yellow "Checking output formats..."
-  if [[ "$output_format" == "mkv" || "$output_format" == "MKV" ]]; then
-    output_mkv_bool=true
-    spacer; green "$output_format is a valid format, continuing..."
-  elif [[ "$output_format" == "mkv_flac" || "$output_format" == "MKV_FLAC" ]]; then
-    output_mkv_flac_bool=true
-    spacer; green "$output_format is a valid format, continuing..."
-  elif [[ "$output_format" == "mp4" || "$output_format" == "MP4" ]]; then
-    output_mp4_bool=true
-    spacer; green "$output_format is a valid format, continuing..."
-  elif [[ "$output_format" == "webm" || "$output_format" == "WEBM" ]]; then
-    output_webm_bool=true
-    spacer; green "$output_format is a valid format, continuing..."
-  else
-    spacer; red "ERROR: Invalid output format! Exiting..."
-    exit
+    exit 1
   fi
 }
 
@@ -109,40 +81,11 @@ check_output()
 check_filepath()
 {
   check="n"
-  tmp_input_mkv_string=""
-  tmp_input_mkv_flac_string=""
-  tmp_input_mp4_string=""
-  tmp_input_webm_string=""
-  tmp_output_mkv_string=""
-  tmp_output_mkv_flac_string=""
-  tmp_output_mp4_string=""
-  tmp_output_webm_string=""
-
-  if [[ $input_mkv_bool == "true" ]]; then
-    tmp_input_mkv_string=".MKV"
-  elif [[ $input_mkv_flac_bool == "true" ]]; then
-    tmp_input_mkv_flac_string=".MKV with FLAC"
-  elif [[ $input_mp4_bool == "true" ]]; then
-    tmp_input_mp4_string=".MP4"
-  elif [[ $input_webm_bool == "true" ]]; then
-    tmp_input_webm_string=".WEBM"
-  fi
-  
-  if [[ $output_mkv_bool == "true" ]]; then
-    tmp_output_mkv_string=".MKV"
-  elif [[ $output_mkv_flac_bool == "true" ]]; then
-    tmp_output_mkv_flac_string=".MKV with FLAC"
-  elif [[ $output_mp4_bool == "true" ]]; then
-    tmp_output_mp4_string=".MP4"
-  elif [[ $output_webm_bool == "true" ]]; then
-    tmp_output_webm_string=".WEBM"
-  fi
 
   cd "$directory"
   current_dir="${PWD}/"  
  
-  spacer; cyan "Selected Input Format: $tmp_input_mkv_string  |  $tmp_input_mkv_flac_string  |  $tmp_input_mp4_string  |  $tmp_input_webm_string"
-  cyan "Selected Output Format: $tmp_output_mkv_string  |  $tmp_output_mkv_flac_string  |  $tmp_output_mp4_string  |  $tmp_output_webm_string"
+  cyan "Current selected option: $select"
   cyan "Current file path: $current_dir"
   spacer; cyan "Is the information that is currently displayed, correct? y/n:"
   spacer; read  -n 1 -p "Input:" check; spacer
@@ -158,48 +101,136 @@ check_filepath()
   fi
 }
 
-# Convert MKV to MP4 with defualt subtitles 
-mkv_to_mp4_default()
+# COMBINE BOTH MKV AND MKV_FLAC INTO ONE FUNCTION
+
+distribute()
 {
-  spacer; yellow "Converting .MKV to .MP4..."
-  find . -type f -iname "*.mkv" -print0 | xargs -0 -I{} ffmpeg -hwaccel cuda -i "{}" -vcodec copy -acodec copy -scodec mov_text "{}.mp4"
-  spacer; green "Finished converting!"
+  input_format=""
+
+  if [[ "$select" == "1" || "$select" == "2" ]]; then
+    input_format="mkv"
+  elif [[ "$select" == "3" ]]; then
+    input_format="mp4"
+  elif [[ "$select" == "4" ]]; then
+    input_format="webm"
+  else
+    spacer; red "ERROR: Unknown! Line 116, review ASAP!"
+    exit 1
+  fi
+
+  find "$directory" -type f -iname "*.$input_format" >> "$m_filepaths"
+  total_lines=$(wc -l < $m_filepaths)
+  avg_load=$(($total_lines/$num_cores))
+  declare -i counter_distribution=$total_lines
+
+  if (( $total_lines < $num_cores )); then
+    num_cores=$(($total_lines))
+  fi
+
+  for (( i=0; i<$num_cores; i++ )); do
+    if (( $i == 0 )); then
+      major_range+=("$counter_distribution")
+    else
+      tmp_lines=$(($counter_distribution-1)); major_range+=("$tmp_lines")
+    fi
+
+    ((counter_distribution -= $avg_load))
+
+    if (( $i == ($num_cores-1) )); then
+      minor_range+=(1)
+      break
+    fi
+
+    minor_range+=("$counter_distribution")
+  done
 }
 
-# Convert MKV with FLAC -> MP4 with default subititles
-mkv_to_mp4_flac()
+process()
 {
-  spacer; yellow "Converting .MKV to .MP4 with FLAC audio..."
-  find . -type f -iname "*.mkv" -print0 | xargs -0 -I{} ffmpeg -hwaccel cuda -i "{}" -map 0 -c:v copy -c:a aac -c:s mov_text "{}.mp4"
-  spacer; green "Finished converting!"
-}
+  # Convert MKV to MP4 with defualt subtitles 
+  function mkv_to_mp4_default()
+  {
+    for (( j=$2; j<=$1; j++ )); do
+      path=$(sed -n "${j}p" "$m_filepaths")
+      ffmpeg -i "$path" -vcodec copy -acodec copy -scodec mov_text "${path/%flac/mp4}" 
+      if [[ "$remove" == true ]]; then
+        rm "$path"
+      fi
+    done
+  }
 
-# Convert MP4 -> MKV
-mp4_to_mkv_default()
-{
-  spacer; yellow "Converting .MP4 to .MKV..."
-  find . -type f -iname "*.mp4" -print0 | xargs -0 -I{} ffmpeg -hwaccel cuda -i "{}" -vcodec copy -acodec copy "{}.mkv"
-  spacer; green "Finished converting!"
-}
+  # Convert MKV with FLAC -> MP4 with default subititles
+  function mkv_to_mp4_flac()
+  {
+    for (( j=$2; j<=$1; j++ )); do
+      path=$(sed -n "${j}p" "$m_filepaths")
+      ffmpeg -i "$path" -map 0 -c:v copy -c:a aac -c:s mov_text "${path/%flac/mp4}" 
+      if [[ "$remove" == true ]]; then
+        rm "$path"
+      fi
+    done
+  }
 
-# Convert WEBM -> MKV
-webm_to_mkv_default()
-{
-  spacer; yellow "Converting .WebM to .MKV..."
-  find . -type f -iname "*.webm" -print0 | xargs -0 -I{} ffmpeg -hwaccel cuda -i "{}" -c copy "{}.mkv"
-  spacer; green "Finished converting!"
+  # Convert MP4 -> MKV
+  function mp4_to_mkv_default()
+  {
+    for (( j=$2; j<=$1; j++ )); do
+      path=$(sed -n "${j}p" "$m_filepaths")
+      ffmpeg -i "$path" -vcodec copy -acodec copy "${path/%flac/mkv}" 
+      if [[ "$remove" == true ]]; then
+        rm "$path"
+      fi
+    done
+  }
+
+  # Convert WEBM -> MKV
+  function webm_to_mkv_default()
+  {
+    for (( j=$2; j<=$1; j++ )); do
+      path=$(sed -n "${j}p" "$m_filepaths")
+      ffmpeg -i "$path" -c copy "${path/%flac/mkv}"
+      if [[ "$remove" == true ]]; then
+        rm "$path"
+      fi
+    done
+  }
+
+  if [[ "$select" == "1" || "$select" == "2" ]]; then
+    for i in $(seq 1 $num_cores)
+    do
+      tmp_i=$(($i-1))
+      (mkv_to_mp4_default "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
+    done
+  elif [[ "$select" == "3" ]]; then
+    for i in $(seq 1 $num_cores)
+    do
+      tmp_i=$(($i-1))
+      (mp4_to_mkv_default "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
+    done
+  elif [[ "$select" == "4" ]]; then
+    for i in $(seq 1 $num_cores)
+    do
+      tmp_i=$(($i-1))
+      (webm_to_mkv_default "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
+    done
+  else
+    spacer; red "ERROR: Unknown! Line 116, review ASAP!"
+    exit 1
+  fi
+
+  pids=$(pgrep -P $$)
+  read -n1 -r -p "Press any key to stop all background processes..."
+
+  kill $pids
 }
 
 clear
 
-while getopts ":i:o:d:lh" arg
+while getopts ":s:d:rlh" arg
 do
   case "$arg" in
-    "i")
-        input_format=$OPTARG
-        ;;
-    "o")
-        output_format=$OPTARG
+    "s")
+        select=$OPTARG
         ;;
     "d")
         directory=$OPTARG
@@ -208,13 +239,15 @@ do
         list_format
         exit 1
         ;;
+    "r")
+        remove=true
+        ;;
     "h")
         spacer
         cat << EOL
 Options:
-         -i: Input format
-         -o: Output format
-         -l: List format options
+         -l: List processing options
+         -s: Select processing option
          -d: Directory to format ( WARNING: Directory is recursive! )
          -h: Display help
 EOL
@@ -241,78 +274,22 @@ green "Starting program..."
 
 main()
 {
+  if (( $num_cores < 1 )); then
+    spacer; red "No CPU cores detected! Something is wrong, ending program..."
+    exit 1
+  fi
+
+  if [[ -f "$m_filepaths" ]]; then
+    rm "$m_filepaths"; touch "$m_filepaths"
+  else
+    touch "$m_filepaths"
+  fi
+
   check_input
   check_output
   check_filepath
 
-  input_mkv_string=""
-  input_mkv_flac_string=""
-  input_mp4_string=""
-  input_webm_string=""
-  output_mkv_string=""
-  output_mkv_flac_string=""
-  output_mp4_string=""
-  output_webm_string=""
-
-  if [[ "$input_mkv_bool" == "true" && "$output_mkv_bool" == "true" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1
-  elif [[ "$input_mkv_flac_bool" == "true" && "$output_mkv_bool" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1 
-  elif [[ "$input_mp4_bool" == "true" && "$output_mkv_bool" ]]; then
-    spacer; yellow "WARNING: Processing videos! This may take a while..."
-    mp4_to_mkv_default
-    exit 1
-  elif [[ "$input_webm_bool" == "true" && "$output_mkv_bool" ]]; then
-    spacer; yellow "WARNING: Processing videos! This may take a while..."
-    webm_to_mkv_default
-    exit 1
-  fi
-  
-  if [[ "$input_mkv_bool" == "true" && "$output_mkv_flac_bool" == "true" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1
-  elif [[ "$input_mkv_flac_bool" == "true" && "$output_mkv_flac_bool" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1 
-  elif [[ "$input_mp4_bool" == "true" && "$output_mkv_flac_bool" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1
-  elif [[ "$input_webm_bool" == "true" && "$output_mkv_flac_bool" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1
-  fi
-  
-  if [[ "$input_mkv_bool" == "true" && "$output_mp4_bool" == "true" ]]; then
-    spacer; yellow "WARNING: Processing videos! This may take a while..."
-    mkv_to_mp4_default
-    exit 1
-  elif [[ "$input_mkv_flac_bool" == "true" && "$output_mp4_bool" ]]; then
-    spacer; yellow "WARNING: Processing videos! This may take a while..." 
-    mkv_to_mp4_flac
-    exit 1
-  elif [[ "$input_mp4_bool" == "true" && "$output_mp4_bool" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1 
-  elif [[ "$input_webm_bool" == "true" && "$output_mp4_bool" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1
-  fi
-
-  if [[ "$input_mkv_bool" == "true" && "$output_webm_bool" == "true" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1 
-  elif [[ "$input_mkv_flac_bool" == "true" && "$output_webm_bool" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1 
-  elif [[ "$input_mp4_bool" == "true" && "$output_webm_bool" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1 
-  elif [[ "$input_webm_bool" == "true" && "$output_webm_bool" ]]; then
-    spacer; red "ERROR: Combination not currently available. Please select different options." 
-    exit 1
-  fi
+  rm "$m_filepaths"
 }
 
 main
