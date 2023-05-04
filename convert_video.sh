@@ -11,7 +11,7 @@ declare -i total_lines=0
 declare -i avg_load=0
 m_filepaths="m_filepaths.txt"
 remove=false
-
+ranges=()
 spacer()
 {
   echo ""
@@ -52,9 +52,8 @@ list_format()
   cat << EOL
 Available Formats:
                     1 - mkv -> mp4
-                    2 - mkv_flac -> mp4
-                    3 - mp4 -> mkv
-                    4 - webm -> mkv
+                    2 - mp4 -> mkv
+                    3 - webm -> mkv
 EOL
   spacer
 }
@@ -69,8 +68,6 @@ check_input()
     spacer; green "$select is a valid format, continuing..."
   elif [[ $select == "3" ]]; then
     spacer; green "$select is a valid format, continuing..."
-  elif [[ $select == "4" ]]; then
-    spacer; green "$select is a valid format, continuing..."
   else
     spacer; red "ERROR: Invalid input format! Exiting..."
     exit 1
@@ -82,11 +79,20 @@ check_filepath()
 {
   check="n"
 
-  cd "$directory"
-  current_dir="${PWD}/"  
- 
-  cyan "Current selected option: $select"
-  cyan "Current file path: $current_dir"
+  if ! [[ -d "$directory" ]]; then
+    spacer; red "Selected directory dooes not exist! Exiting..."
+    pwd
+    exit 1
+  fi
+  
+  if [[ "$remove" == true ]]; then
+    spacer; red "WARNING: Remove flag set to: $remove!"
+  else
+    spacer; green "Remove flag set to: $remove!"
+  fi
+
+  spacer; cyan "Current selected option: $select"
+  spacer; cyan "Selected file path: $directory"
   spacer; cyan "Is the information that is currently displayed, correct? y/n:"
   spacer; read  -n 1 -p "Input:" check; spacer
   
@@ -106,22 +112,34 @@ check_filepath()
 distribute()
 {
   input_format=""
+  bad_postfix=""
 
-  if [[ "$select" == "1" || "$select" == "2" ]]; then
+  if [[ "$select" == "1" ]]; then
     input_format="mkv"
-  elif [[ "$select" == "3" ]]; then
+    bad_postfix="MKV"
+  elif [[ "$select" == "2" ]]; then
     input_format="mp4"
-  elif [[ "$select" == "4" ]]; then
+    bad_postfix="MP4"
+  elif [[ "$select" == "3" ]]; then
     input_format="webm"
+    bad_postfix="WEBM"
   else
     spacer; red "ERROR: Unknown! Line 116, review ASAP!"
     exit 1
   fi
 
+  find "$directory" -type f -print0 | while IFS= read -r -d '' filepath; do
+    filename=$(basename "$filepath")
+    extension="${filename##*.}"
+    filename="${filename%.*}"
+    mv "${filepath}" "$(dirname ${filepath})/${filename}.${extension,,}"
+  done
+
   find "$directory" -type f -iname "*.$input_format" >> "$m_filepaths"
+  # CHECK FOR CAPITAL LETTERS IN POSTFIX -> RENAME TO LOWERCASE POSTFIX
   total_lines=$(wc -l < $m_filepaths)
   avg_load=$(($total_lines/$num_cores))
-  declare -i counter_distribution=$total_lines
+  declare -i counter_distribution=$(($total_lines))
 
   if (( $total_lines < $num_cores )); then
     num_cores=$(($total_lines))
@@ -140,7 +158,7 @@ distribute()
       minor_range+=(1)
       break
     fi
-
+    
     minor_range+=("$counter_distribution")
   done
 }
@@ -152,19 +170,16 @@ process()
   {
     for (( j=$2; j<=$1; j++ )); do
       path=$(sed -n "${j}p" "$m_filepaths")
-      ffmpeg -i "$path" -vcodec copy -acodec copy -scodec mov_text "${path/%flac/mp4}" 
-      if [[ "$remove" == true ]]; then
-        rm "$path"
+      audio_check=$(ffprobe -loglevel error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1 "$path")
+      
+      if echo "$audio_check" | grep -q "truehd"; then
+        # Convert MKV with TrueHD -> MP4 with default subititles
+        ffmpeg -i "$path" -map 0 -c:v copy -c:a aac -c:s mov_text "${path/%mkv/mp4}" 
+      else
+        # Convert MKV with ACC/AC-3 -> MP4 with default subititles
+        ffmpeg -i "$path" -vcodec copy -acodec copy -scodec mov_text "${path/%mkv/mp4}" 
       fi
-    done
-  }
-
-  # Convert MKV with FLAC -> MP4 with default subititles
-  function mkv_to_mp4_flac()
-  {
-    for (( j=$2; j<=$1; j++ )); do
-      path=$(sed -n "${j}p" "$m_filepaths")
-      ffmpeg -i "$path" -map 0 -c:v copy -c:a aac -c:s mov_text "${path/%flac/mp4}" 
+      
       if [[ "$remove" == true ]]; then
         rm "$path"
       fi
@@ -176,7 +191,8 @@ process()
   {
     for (( j=$2; j<=$1; j++ )); do
       path=$(sed -n "${j}p" "$m_filepaths")
-      ffmpeg -i "$path" -vcodec copy -acodec copy "${path/%flac/mkv}" 
+      ffmpeg -i "$path" -vcodec copy -acodec copy "${path/%mp4/mkv}" 
+      
       if [[ "$remove" == true ]]; then
         rm "$path"
       fi
@@ -188,26 +204,27 @@ process()
   {
     for (( j=$2; j<=$1; j++ )); do
       path=$(sed -n "${j}p" "$m_filepaths")
-      ffmpeg -i "$path" -c copy "${path/%flac/mkv}"
+      ffmpeg -i "$path" -c copy "${path/%webm/mkv}"
+      
       if [[ "$remove" == true ]]; then
         rm "$path"
       fi
     done
   }
 
-  if [[ "$select" == "1" || "$select" == "2" ]]; then
+  if [[ "$select" == "1" ]]; then
     for i in $(seq 1 $num_cores)
     do
       tmp_i=$(($i-1))
       (mkv_to_mp4_default "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
     done
-  elif [[ "$select" == "3" ]]; then
+  elif [[ "$select" == "2" ]]; then
     for i in $(seq 1 $num_cores)
     do
       tmp_i=$(($i-1))
       (mp4_to_mkv_default "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
     done
-  elif [[ "$select" == "4" ]]; then
+  elif [[ "$select" == "3" ]]; then
     for i in $(seq 1 $num_cores)
     do
       tmp_i=$(($i-1))
@@ -223,8 +240,6 @@ process()
 
   kill $pids
 }
-
-clear
 
 while getopts ":s:d:rlh" arg
 do
@@ -249,6 +264,7 @@ Options:
          -l: List processing options
          -s: Select processing option
          -d: Directory to format ( WARNING: Directory is recursive! )
+         -r: Remove old files  after processing
          -h: Display help
 EOL
         spacer
@@ -286,8 +302,9 @@ main()
   fi
 
   check_input
-  check_output
   check_filepath
+  distribute
+  process
 
   rm "$m_filepaths"
 }

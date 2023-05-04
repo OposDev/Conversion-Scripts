@@ -133,8 +133,6 @@ delete()
   spacer; green "Finished removing!"
 }
 
-clear
-
 while getopts ":i:o:d:lrh" arg
 do
   case "$arg" in
