@@ -333,7 +333,7 @@ Options:
          -l: List processing options
          -s: Select processing option
          -d: Directory to format ( WARNING: Directory search is recursive! )
-         -r: Remove old files  after processing
+         -r: Remove old files after processing ( Default is: false! )
          -h: Display help
 EOL
         spacer
