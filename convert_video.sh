@@ -133,7 +133,7 @@ distribute()
     input_format="mov"
     bad_postfix="MOV" 
   else
-    spacer; red "ERROR: Unknown! Line 116, review ASAP!"
+    spacer; red "ERROR: Unknown! Check distribute(), review ASAP!"
     exit 1
   fi
 
