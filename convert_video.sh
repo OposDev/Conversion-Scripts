@@ -79,7 +79,7 @@ check_input()
 check_filepath()
 {
   check="n"
-  tmp_dir=$(cd $directory && pwd)
+  tmp_dir=$(cd "$directory" && pwd)
 
   if ! [[ -d "$directory" ]]; then
     spacer; red "Selected directory dooes not exist! Exiting..."
@@ -143,7 +143,7 @@ distribute()
     filename=$(basename "$filepath")
     extension="${filename##*.}"
     filename="${filename%.*}"
-    mv "${filepath}" "$(dirname ${filepath})/${filename}.${extension,,}" &> /dev/null
+    mv "${filepath}" "$(dirname ${filepath})/${filename}.${extension,,}"  &> /dev/null
   done
 
   # Store data for processing
