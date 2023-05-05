@@ -12,7 +12,6 @@ declare -i avg_load=0
 m_filepaths="m_filepaths.txt"
 ffmpeg_log="log.txt"
 remove=false
-ranges=()
 
 spacer()
 {
