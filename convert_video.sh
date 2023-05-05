@@ -10,13 +10,16 @@ minor_range=()
 declare -i total_lines=0
 declare -i avg_load=0
 m_filepaths="m_filepaths.txt"
+ffmpeg_log="log.txt"
 remove=false
 ranges=()
+
 spacer()
 {
   echo ""
 }
 
+# Color functionality within terminal
 set +x
 function red(){
     echo -e "\x1B[31m $1 \x1B[0m"
@@ -54,6 +57,9 @@ Available Formats:
                     1 - mkv -> mp4
                     2 - mp4 -> mkv
                     3 - webm -> mkv
+                    4 - avi -> mkv
+                    5 - flac -> mp3
+                    6 - mov -> mkv
 EOL
   spacer
 }
@@ -62,11 +68,7 @@ EOL
 check_input()
 {
   spacer; yellow "Checking input formats..."
-  if [[ $select == "1" ]]; then
-    spacer; green "$select is a valid format, continuing..."
-  elif [[ $select == "2" ]]; then
-    spacer; green "$select is a valid format, continuing..."
-  elif [[ $select == "3" ]]; then
+  if [[ "$select" == "1" || "$select" == "2" || "$select" == "3" || "$select" == "4" || "$select" == "5" || "$select" == "6" ]]; then
     spacer; green "$select is a valid format, continuing..."
   else
     spacer; red "ERROR: Invalid input format! Exiting..."
@@ -74,14 +76,13 @@ check_input()
   fi
 }
 
-# Checks current selected dir
+# Checks current selected dir & display selected information
 check_filepath()
 {
   check="n"
 
   if ! [[ -d "$directory" ]]; then
     spacer; red "Selected directory dooes not exist! Exiting..."
-    pwd
     exit 1
   fi
   
@@ -107,8 +108,7 @@ check_filepath()
   fi
 }
 
-# COMBINE BOTH MKV AND MKV_FLAC INTO ONE FUNCTION
-
+# Gathers files with selected format -> distributes load across system CPUs
 distribute()
 {
   input_format=""
@@ -123,20 +123,30 @@ distribute()
   elif [[ "$select" == "3" ]]; then
     input_format="webm"
     bad_postfix="WEBM"
+  elif [[ "$select" == "4" ]]; then
+    input_format="avi"
+    bad_postfix="AVI"
+  elif [[ "$select" == "5" ]]; then
+    input_format="flac"
+    bad_postfix="FLAC"
+  elif [[ "$select" == "6" ]]; then
+    input_format="mov"
+    bad_postfix="MOV" 
   else
     spacer; red "ERROR: Unknown! Line 116, review ASAP!"
     exit 1
   fi
 
+  # Finds postfix with captital letters -> converts to lowercase for processing
   find "$directory" -type f -print0 | while IFS= read -r -d '' filepath; do
     filename=$(basename "$filepath")
     extension="${filename##*.}"
     filename="${filename%.*}"
-    mv "${filepath}" "$(dirname ${filepath})/${filename}.${extension,,}"
+    mv "${filepath}" "$(dirname ${filepath})/${filename}.${extension,,}" &> /dev/null
   done
 
+  # Store data for processing
   find "$directory" -type f -iname "*.$input_format" >> "$m_filepaths"
-  # CHECK FOR CAPITAL LETTERS IN POSTFIX -> RENAME TO LOWERCASE POSTFIX
   total_lines=$(wc -l < $m_filepaths)
   avg_load=$(($total_lines/$num_cores))
   declare -i counter_distribution=$(($total_lines))
@@ -145,6 +155,7 @@ distribute()
     num_cores=$(($total_lines))
   fi
 
+  # Logic for distributing
   for (( i=0; i<$num_cores; i++ )); do
     if (( $i == 0 )); then
       major_range+=("$counter_distribution")
@@ -163,10 +174,11 @@ distribute()
   done
 }
 
+# Light multithreading with ffmpeg -> processes distributioned data
 process()
 {
   # Convert MKV to MP4 with defualt subtitles 
-  function mkv_to_mp4_default()
+  function mkv_to_mp4()
   {
     for (( j=$2; j<=$1; j++ )); do
       path=$(sed -n "${j}p" "$m_filepaths")
@@ -174,10 +186,10 @@ process()
       
       if echo "$audio_check" | grep -q "truehd"; then
         # Convert MKV with TrueHD -> MP4 with default subititles
-        ffmpeg -i "$path" -map 0 -c:v copy -c:a aac -c:s mov_text "${path/%mkv/mp4}" 
+        ffmpeg -i "$path" -map 0 -c:v copy -c:a aac -c:s mov_text "${path/%mkv/mp4}" 2>> "$ffmpeg_log"
       else
         # Convert MKV with ACC/AC-3 -> MP4 with default subititles
-        ffmpeg -i "$path" -vcodec copy -acodec copy -scodec mov_text "${path/%mkv/mp4}" 
+        ffmpeg -i "$path" -vcodec copy -acodec copy -scodec mov_text "${path/%mkv/mp4}" 2>> "$ffmpeg_log"
       fi
       
       if [[ "$remove" == true ]]; then
@@ -187,11 +199,11 @@ process()
   }
 
   # Convert MP4 -> MKV
-  function mp4_to_mkv_default()
+  function mp4_to_mkv()
   {
     for (( j=$2; j<=$1; j++ )); do
       path=$(sed -n "${j}p" "$m_filepaths")
-      ffmpeg -i "$path" -vcodec copy -acodec copy "${path/%mp4/mkv}" 
+      ffmpeg -i "$path" -vcodec copy -acodec copy "${path/%mp4/mkv}" 2>> "$ffmpeg_log"
       
       if [[ "$remove" == true ]]; then
         rm "$path"
@@ -200,11 +212,50 @@ process()
   }
 
   # Convert WEBM -> MKV
-  function webm_to_mkv_default()
+  function webm_to_mkv()
   {
     for (( j=$2; j<=$1; j++ )); do
       path=$(sed -n "${j}p" "$m_filepaths")
-      ffmpeg -i "$path" -c copy "${path/%webm/mkv}"
+      ffmpeg -i "$path" -c copy "${path/%webm/mkv}" 2>> "$ffmpeg_log"
+      
+      if [[ "$remove" == true ]]; then
+        rm "$path"
+      fi
+    done
+  }
+
+  # Convert AVI -> MKV
+  function avi_to_mkv()
+  {
+    for (( j=$2; j<=$1; j++ )); do
+      path=$(sed -n "${j}p" "$m_filepaths")
+      ffmpeg -i "$path" -c:v ffv1 -level 3 -g 1 -c:a flac "${path/%avi/mkv}" 2>> "$ffmpeg_log"
+      
+      if [[ "$remove" == true ]]; then
+        rm "$path"
+      fi
+    done
+  }
+
+  # Convert FLAC -> MP3
+  function flac_to_mp3()
+  {
+    for (( j=$2; j<=$1; j++ )); do
+      path=$(sed -n "${j}p" "$m_filepaths")
+      ffmpeg -i "$path" -c:a libmp3lame -q:a 0 "${path/%flac/mp3}" 2>> "$ffmpeg_log"
+      
+      if [[ "$remove" == true ]]; then
+        rm "$path"
+      fi
+    done
+  }
+
+  # Convert MOV -> MKV
+  function mov_to_mkv()
+  {
+    for (( j=$2; j<=$1; j++ )); do
+      path=$(sed -n "${j}p" "$m_filepaths")
+      ffmpeg -i "$path" -c:v copy -c:a copy "${path/%mov/mkv}" 2>> "$ffmpeg_log"
       
       if [[ "$remove" == true ]]; then
         rm "$path"
@@ -216,20 +267,38 @@ process()
     for i in $(seq 1 $num_cores)
     do
       tmp_i=$(($i-1))
-      (mkv_to_mp4_default "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
+      (mkv_to_mp4 "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
     done
   elif [[ "$select" == "2" ]]; then
     for i in $(seq 1 $num_cores)
     do
       tmp_i=$(($i-1))
-      (mp4_to_mkv_default "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
+      (mp4_to_mkv "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
     done
   elif [[ "$select" == "3" ]]; then
     for i in $(seq 1 $num_cores)
     do
       tmp_i=$(($i-1))
-      (webm_to_mkv_default "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
+      (webm_to_mkv "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
     done
+  elif [[ "$select" == "4" ]]; then
+    for i in $(seq 1 $num_cores)
+    do
+      tmp_i=$(($i-1))
+      (avi_to_mkv "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
+    done
+  elif [[ "$select" == "5" ]]; then
+    for i in $(seq 1 $num_cores)
+    do
+      tmp_i=$(($i-1))
+      (flac_to_mp3 "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
+    done
+  elif [[ "$select" == "6" ]]; then
+    for i in $(seq 1 $num_cores)
+    do
+      tmp_i=$(($i-1))
+      (mov_to_mkv "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
+    done  
   else
     spacer; red "ERROR: Unknown! Line 116, review ASAP!"
     exit 1
@@ -299,6 +368,10 @@ main()
     rm "$m_filepaths"; touch "$m_filepaths"
   else
     touch "$m_filepaths"
+  fi
+
+  if ! [[ -f "$ffmpeg_log" ]]; then
+    touch "$ffmpeg_log"
   fi
 
   check_input
