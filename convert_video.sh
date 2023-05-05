@@ -3,7 +3,7 @@
 select=""
 directory=""
 current_dir=""
-
+script_dir=`pwd`
 declare -i num_cores="$(nproc)"
 major_range=()
 minor_range=()
@@ -79,6 +79,7 @@ check_input()
 check_filepath()
 {
   check="n"
+  tmp_dir=$(cd $directory && pwd)
 
   if ! [[ -d "$directory" ]]; then
     spacer; red "Selected directory dooes not exist! Exiting..."
@@ -92,7 +93,7 @@ check_filepath()
   fi
 
   spacer; cyan "Current selected option: $select"
-  spacer; cyan "Selected file path: $directory"
+  spacer; cyan "Selected file path: $tmp_dir"
   spacer; cyan "Is the information that is currently displayed, correct? y/n:"
   spacer; read  -n 1 -p "Input:" check; spacer
   
@@ -101,6 +102,7 @@ check_filepath()
     exit
   elif [[ $check == "y" || $check == "Y" ]]; then
     spacer; yellow "WARNING: Starting format process!"
+    cd "$script_dir"
   else
     spacer; red "ERROR: Unknown input! Exiting..."
     exit
