@@ -332,7 +332,7 @@ do
 Options:
          -l: List processing options
          -s: Select processing option
-         -d: Directory to format ( WARNING: Directory is recursive! )
+         -d: Directory to format ( WARNING: Directory search is recursive! )
          -r: Remove old files  after processing
          -h: Display help
 EOL
