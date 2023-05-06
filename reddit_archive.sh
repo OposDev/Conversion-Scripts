@@ -129,9 +129,6 @@ process_links()
 
 }
 
-clear
-green "Starting archiving process..."
-
 while getopts ":i:l:c:d:h" arg
 do
   case "$arg" in
@@ -174,6 +171,9 @@ EOL
         ;;
   esac
 done
+
+clear
+green "Starting archiving process..."
 
 main()
 {
