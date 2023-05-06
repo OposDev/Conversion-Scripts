@@ -74,11 +74,11 @@ replace()
   spacer; green "Finished processing!"
 }
 
-while getopts ":c:d:h" arg
+while getopts ":d:ch" arg
 do
   case "$arg" in
     "c")
-        =$OPTARG
+        prefix=true
         ;;
     "d")
         directory=$OPTARG
