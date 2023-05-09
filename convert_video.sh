@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# TO DO: fix "h264 | SRT subtitles | AC-3" processing bug with 'ffmpeg -hwaccel cuda -i input.mkv -c:v libx264 -c:a copy -c:s mov_text output.mp4' 
+
 select=""
 directory=""
 current_dir=""
