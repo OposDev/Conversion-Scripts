@@ -13,19 +13,23 @@ check_for_file()
   fi
 }
 
-function video_with_cookies() {
+function video_with_cookies() 
+{
    yt-dlp -f bestvideo --cookies "$cookies" -o "%(artist)s - %(title)s.%(ext)s" -P "$output" "$1"
 }
 
-function video() {
+function video() 
+{
    yt-dlp -f bestvideo -o "%(artist)s - %(title)s.%(ext)s" -P "$output" "$1"
 }
 
-function music_with_cookies() {
+function music_with_cookies() 
+{
    yt-dlp -f bestaudio -x --audio-quality 0 --audio-format flac -o "%(artist)s - %(title)s.%(ext)s" --cookies "$cookies" -P "$output" "$1"
 }
 
-function music() {
+function music() 
+{
    yt-dlp -f bestaudio -x --audio-quality 0 --audio-format flac -o "%(artist)s - %(title)s.%(ext)s" -P "$output" "$1"
 }
 
