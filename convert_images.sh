@@ -3,14 +3,15 @@
 input_select=""
 output_select=""
 directory=""
-declare -i num_cores="$(nproc)"
+declare -i num_cores
+num_cores="$(nproc)"
 major_range=()
 minor_range=()
 declare -i total_lines=0
 declare -i avg_load=0
 m_filepaths="m_filepaths.txt"
 remove=false
-script_dir=`pwd`
+script_dir=$(pwd)
 
 spacer()
 {
@@ -32,28 +33,28 @@ EOL
 set +x
 function red(){
     echo -e "\x1B[31m $1 \x1B[0m"
-    if [ ! -z "${2}" ]; then
+    if [ -n "${2}" ]; then
     echo -e "\x1B[31m $($2) \x1B[0m"
     fi
 }
 
 function green(){
     echo -e "\x1B[32m $1 \x1B[0m"
-    if [ ! -z "${2}" ]; then
+    if [ -n "${2}" ]; then
     echo -e "\x1B[32m $($2) \x1B[0m"
     fi
 }
 
 function yellow(){
     echo -e "\x1B[33m $1 \x1B[0m"
-    if [ ! -z "${2}" ]; then
+    if [ -n "${2}" ]; then
     echo -e "\x1B[33m $($2) \x1B[0m"
     fi
 }
 
 function cyan(){
     echo -e "\x1B[36m $1 \x1B[0m"
-    if [ ! -z "${2}" ]; then
+    if [ -n "${2}" ]; then
     echo -e "\x1B[36m $($2) \x1B[0m"
     fi
 }
@@ -86,7 +87,7 @@ check_output()
 check_filepath()
 {
   check="n"
-  tmp_dir=$(cd $directory && pwd)
+  tmp_dir=$(cd "$directory" && pwd)
 
   if ! [[ -d "$tmp_dir" ]]; then
     spacer; red "Selected directory dooes not exist! Exiting..."
@@ -110,7 +111,7 @@ check_filepath()
     exit
   elif [[ $check == "y" || $check == "Y" ]]; then
     spacer; yellow "WARNING: Starting format process!"
-    cd "$script_dir"
+    cd "$script_dir" || exit 1
   else
     spacer; red "ERROR: Unknown input! Exiting..."
     exit
@@ -121,33 +122,13 @@ check_filepath()
 distribute()
 {
   input_format=""
-  in_bad_postfix=""
-  output_format=""
-  out_bad_postfix=""
 
   if [[ "$input_select" == "1" ]]; then
     input_format="png"
-    in_bad_postfix="PNG"
   elif [[ "$input_select" == "2" ]]; then
     input_format="jpg"
-    in_bad_postfix="JPG"
   elif [[ "$input_select" == "3" ]]; then
     input_format="jpeg"
-    in_bad_postfix="JPEG"
-  else
-    spacer; red "ERROR: Unknown! Check distribute(), review ASAP!"
-    exit 1
-  fi
-  
-  if [[ "$output_select" == "1" ]]; then
-    output_format="png"
-    out_bad_postfix="PNG"
-  elif [[ "$output_select" == "2" ]]; then
-    output_format="jpg"
-    out_bad_postfix="JPG"
-  elif [[ "$output_select" == "3" ]]; then
-    output_format="jpeg"
-    out_bad_postfix="JPEG"
   else
     spacer; red "ERROR: Unknown! Check distribute(), review ASAP!"
     exit 1
@@ -158,30 +139,30 @@ distribute()
     filename=$(basename "$filepath")
     extension="${filename##*.}"
     filename="${filename%.*}"
-    mv "${filepath}" "$(dirname ${filepath})/${filename}.${extension,,}" &> /dev/null
+    mv "${filepath}" "$(dirname "${filepath}")/${filename}.${extension,,}" &> /dev/null
   done
 
   # Store data for processing
   find "$directory" -type f -iname "*.$input_format" >> "$m_filepaths"
   total_lines=$(wc -l < $m_filepaths)
-  avg_load=$(($total_lines/$num_cores))
-  declare -i counter_distribution=$(($total_lines))
+  avg_load=$((total_lines/num_cores))
+  declare -i counter_distribution=$((total_lines))
 
-  if (( $total_lines < $num_cores )); then
-    num_cores=$(($total_lines))
+  if (( total_lines < num_cores )); then
+    num_cores=$((total_lines))
   fi
 
   # Logic for distributing
-  for (( i=0; i<$num_cores; i++ )); do
-    if (( $i == 0 )); then
+  for (( i=0; i<num_cores; i++ )); do
+    if (( i == 0 )); then
       major_range+=("$counter_distribution")
     else
-      tmp_lines=$(($counter_distribution-1)); major_range+=("$tmp_lines")
+      tmp_lines=$((counter_distribution-1)); major_range+=("$tmp_lines")
     fi
 
-    ((counter_distribution -= $avg_load))
+    ((counter_distribution -= avg_load))
 
-    if (( $i == ($num_cores-1) )); then
+    if (( i == (num_cores-1) )); then
       minor_range+=(1)
       break
     fi
@@ -190,7 +171,7 @@ distribute()
   done
 }
 
-# Light multithreading with mogrify -> processes distributioned data
+# Light multithreading with mogrify -> processes distributed data
 process()
 {
   # Convert files
@@ -209,19 +190,19 @@ process()
   if [[ "$output_select" == "1" ]]; then
     for i in $(seq 1 $num_cores)
     do
-      tmp_i=$(($i-1))
+      tmp_i=$((i-1))
       (convert "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}" "png") & disown
     done
   elif [[ "$output_select" == "2" ]]; then
     for i in $(seq 1 $num_cores)
     do
-      tmp_i=$(($i-1))
+      tmp_i=$((i-1))
       (convert "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}" "jpg") & disown
     done
   elif [[ "$output_select" == "3" ]]; then
     for i in $(seq 1 $num_cores)
     do
-      tmp_i=$(($i-1))
+      tmp_i=$((i-1))
       (convert "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}" "jpeg") & disown
     done
   else
@@ -232,7 +213,7 @@ process()
   pids=$(pgrep -P $$)
   read -n1 -r -p "Press any key to stop all background processes..."
 
-  kill $pids
+  kill "$pids"
 }
 
 while getopts ":i:o:d:lrh" arg
@@ -288,7 +269,7 @@ green "Starting program..."
 
 main()
 {
-  if (( $num_cores < 1 )); then
+  if (( num_cores < 1 )); then
     spacer; red "No CPU cores detected! Something is wrong, ending program..."
     exit 1
   fi
