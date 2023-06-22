@@ -4,9 +4,9 @@
 
 select=""
 directory=""
-current_dir=""
-script_dir=`pwd`
-declare -i num_cores="$(nproc)"
+script_dir=$(pwd)
+declare -i num_cores
+num_cores="$(nproc)"
 major_range=()
 minor_range=()
 declare -i total_lines=0
@@ -24,28 +24,28 @@ spacer()
 set +x
 function red(){
     echo -e "\x1B[31m $1 \x1B[0m"
-    if [ ! -z "${2}" ]; then
+    if [ -n "${2}" ]; then
     echo -e "\x1B[31m $($2) \x1B[0m"
     fi
 }
 
 function green(){
     echo -e "\x1B[32m $1 \x1B[0m"
-    if [ ! -z "${2}" ]; then
+    if [ -n "${2}" ]; then
     echo -e "\x1B[32m $($2) \x1B[0m"
     fi
 }
 
 function yellow(){
     echo -e "\x1B[33m $1 \x1B[0m"
-    if [ ! -z "${2}" ]; then
+    if [ -n "${2}" ]; then
     echo -e "\x1B[33m $($2) \x1B[0m"
     fi
 }
 
 function cyan(){
     echo -e "\x1B[36m $1 \x1B[0m"
-    if [ ! -z "${2}" ]; then
+    if [ -n "${2}" ]; then
     echo -e "\x1B[36m $($2) \x1B[0m"
     fi
 }
@@ -104,7 +104,7 @@ check_filepath()
     exit
   elif [[ $check == "y" || $check == "Y" ]]; then
     spacer; yellow "WARNING: Starting format process!"
-    cd "$script_dir"
+    cd "$script_dir" || exit 1
   else
     spacer; red "ERROR: Unknown input! Exiting..."
     exit
@@ -115,26 +115,19 @@ check_filepath()
 distribute()
 {
   input_format=""
-  bad_postfix=""
 
   if [[ "$select" == "1" ]]; then
     input_format="mkv"
-    bad_postfix="MKV"
   elif [[ "$select" == "2" ]]; then
     input_format="mp4"
-    bad_postfix="MP4"
   elif [[ "$select" == "3" ]]; then
     input_format="webm"
-    bad_postfix="WEBM"
   elif [[ "$select" == "4" ]]; then
     input_format="avi"
-    bad_postfix="AVI"
   elif [[ "$select" == "5" ]]; then
     input_format="flac"
-    bad_postfix="FLAC"
   elif [[ "$select" == "6" ]]; then
     input_format="mov"
-    bad_postfix="MOV" 
   else
     spacer; red "ERROR: Unknown! Check distribute(), review ASAP!"
     exit 1
@@ -145,30 +138,30 @@ distribute()
     filename=$(basename "$filepath")
     extension="${filename##*.}"
     filename="${filename%.*}"
-    mv "${filepath}" "$(dirname ${filepath})/${filename}.${extension,,}"  &> /dev/null
+    mv "${filepath}" "$(dirname "${filepath}")/${filename}.${extension,,}"  &> /dev/null
   done
 
   # Store data for processing
   find "$directory" -type f -iname "*.$input_format" >> "$m_filepaths"
   total_lines=$(wc -l < $m_filepaths)
-  avg_load=$(($total_lines/$num_cores))
-  declare -i counter_distribution=$(($total_lines))
+  avg_load=$((total_lines/num_cores))
+  declare -i counter_distribution=$((total_lines))
 
-  if (( $total_lines < $num_cores )); then
-    num_cores=$(($total_lines))
+  if (( total_lines < num_cores )); then
+    num_cores=$((total_lines))
   fi
 
   # Logic for distributing
-  for (( i=0; i<$num_cores; i++ )); do
-    if (( $i == 0 )); then
+  for (( i=0; i<num_cores; i++ )); do
+    if (( i == 0 )); then
       major_range+=("$counter_distribution")
     else
-      tmp_lines=$(($counter_distribution-1)); major_range+=("$tmp_lines")
+      tmp_lines=$((counter_distribution-1)); major_range+=("$tmp_lines")
     fi
 
-    ((counter_distribution -= $avg_load))
+    ((counter_distribution -= avg_load))
 
-    if (( $i == ($num_cores-1) )); then
+    if (( i == (num_cores-1) )); then
       minor_range+=(1)
       break
     fi
@@ -269,37 +262,37 @@ process()
   if [[ "$select" == "1" ]]; then
     for i in $(seq 1 $num_cores)
     do
-      tmp_i=$(($i-1))
+      tmp_i=$((i-1))
       (mkv_to_mp4 "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
     done
   elif [[ "$select" == "2" ]]; then
     for i in $(seq 1 $num_cores)
     do
-      tmp_i=$(($i-1))
+      tmp_i=$((i-1))
       (mp4_to_mkv "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
     done
   elif [[ "$select" == "3" ]]; then
     for i in $(seq 1 $num_cores)
     do
-      tmp_i=$(($i-1))
+      tmp_i=$((i-1))
       (webm_to_mkv "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
     done
   elif [[ "$select" == "4" ]]; then
     for i in $(seq 1 $num_cores)
     do
-      tmp_i=$(($i-1))
+      tmp_i=$((i-1))
       (avi_to_mkv "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
     done
   elif [[ "$select" == "5" ]]; then
     for i in $(seq 1 $num_cores)
     do
-      tmp_i=$(($i-1))
+      tmp_i=$((i-1))
       (flac_to_mp3 "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
     done
   elif [[ "$select" == "6" ]]; then
     for i in $(seq 1 $num_cores)
     do
-      tmp_i=$(($i-1))
+      tmp_i=$((i-1))
       (mov_to_mkv "${major_range[$tmp_i]}" "${minor_range[$tmp_i]}") & disown
     done  
   else
@@ -310,7 +303,7 @@ process()
   pids=$(pgrep -P $$)
   read -n1 -r -p "Press any key to stop all background processes..."
 
-  kill $pids
+  kill "$pids"
 }
 
 while getopts ":s:d:rlh" arg
@@ -362,7 +355,7 @@ green "Starting program..."
 
 main()
 {
-  if (( $num_cores < 1 )); then
+  if (( num_cores < 1 )); then
     spacer; red "No CPU cores detected! Something is wrong, ending program..."
     exit 1
   fi
