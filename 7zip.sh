@@ -4,7 +4,7 @@ file=""
 file_path=""
 file_name=""
 output=""
-script_dir=`pwd`
+script_dir=$(pwd)
 password=false
 
 spacer()
@@ -14,7 +14,7 @@ spacer()
 
 format_inputs()
 {
-  file_path=`realpath "$file"`
+  file_path=$(realpath "$file")
 
   if [[ -z "$output" ]]; then
     output="./"
@@ -25,23 +25,23 @@ format_inputs()
     file="$tmp_string"
   fi
 
-  if ! [[ -z "$file_name" ]]; then
+  if [[ -n "$file_name" ]]; then
     file="$file_name"
   fi
 }
 
 7zip_default()
 {
-  cd "$output"
+  cd "$output" || exit 1
   7z a -bt -t7z -m0=zstd -mx=11 -mhe=on "$file".7z "$file_path"
-  cd "$script_dir"
+  cd "$script_dir" || exit 1
 }
 
 7zip_password()
 {
-  cd "$output"
+  cd "$output" || exit 1
   7z a -bt -t7z -m0=zstd -mx=11 -mhe=on -p "$file".7z "$file_path"
-  cd "$script_dir"
+  cd "$script_dir" || exit 1
 }
 
 while getopts ":i:o:n:ph" arg
