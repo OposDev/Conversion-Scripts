@@ -62,11 +62,11 @@ function cyan(){
 # Checks inputs of user
 check_input()
 {
-  spacer; yellow "Checking selected input..."
+  spacer; yellow "CHECKING SELECTED INPUT..."
   if [[ $input_select == "1" || "$input_select" == "2" || "$input_select" == "3" ]]; then
-    spacer; green "$input_select is a valid format, continuing..."
+    green " > $input_select is a valid format, continuing..."
   else
-    spacer; red "ERROR: Invalid input format! Exiting..."
+    red " X - ERROR: Invalid input format! Exiting..."
     exit
   fi
 }
@@ -74,11 +74,11 @@ check_input()
 # Checks outputs of user
 check_output()
 {
-  spacer; yellow "Checking selected output..."
+  spacer; yellow "CHECKING SELECTED OUTPUT..."
   if [[ $output_select == "1" || "$output_select" == "2" || "$output_select" == "3" ]]; then
-    spacer; green "$output_select is a valid format, continuing..."
+    green " > $output_select is a valid format, continuing..."
   else
-    spacer; red "ERROR: Invalid input format! Exiting..."
+    red " X - ERROR: Invalid input format! Exiting..."
     exit
   fi
 }
@@ -90,30 +90,30 @@ check_filepath()
   tmp_dir=$(cd "$directory" && pwd)
 
   if ! [[ -d "$tmp_dir" ]]; then
-    spacer; red "Selected directory dooes not exist! Exiting..."
+    red " X - Selected directory dooes not exist! Exiting..."
     exit 1
   fi
   
   if [[ "$remove" == true ]]; then
-    spacer; red "WARNING: Remove flag set to: $remove!"
+    yellow " - WARNING: Remove flag set to: $remove!"
   else
-    spacer; green "Remove flag set to: $remove!"
+    green " > Remove flag set to: $remove!"
   fi
 
-  spacer; cyan "Current selected input: $input_select"
-  spacer; cyan "Current selected output: $output_select" 
-  spacer; cyan "Selected file path: $tmp_dir"
-  spacer; cyan "Is the information that is currently displayed, correct? y/n:"
-  spacer; read  -n 1 -p "Input:" check; spacer
+  cyan " ? Current selected input: $input_select"
+  cyan " ? Current selected output: $output_select" 
+  cyan " ? Selected file path: $tmp_dir"
+  cyan " ? Is the information that is currently displayed, correct? y/n:"
+  read  -n 1 -p "Input:" check; spacer
   
   if [[ $check == "n" || $check == "N" ]]; then
-    spacer; yellow "WARNING: Incorrect file path! Exiting..."
+    spacer; yellow " - WARNING: User selected 'no'! Exiting..."
     exit
   elif [[ $check == "y" || $check == "Y" ]]; then
-    spacer; yellow "WARNING: Starting format process!"
+    spacer; yellow " - WARNING: User selected 'yes'! Starting format process!"
     cd "$script_dir" || exit 1
   else
-    spacer; red "ERROR: Unknown input! Exiting..."
+    spacer; red " X - ERROR: Unknown input! Exiting..."
     exit
   fi
 }
@@ -265,7 +265,7 @@ EOL
 done
 
 clear
-green "Starting program..."
+yellow "STARTING PROGRAM..."
 
 main()
 {

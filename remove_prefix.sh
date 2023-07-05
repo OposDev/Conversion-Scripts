@@ -45,17 +45,17 @@ replace()
   cd "$directory" || exit 1
   current_dir="${PWD}/"  
   
-  spacer; cyan "Current file path: $current_dir"
-  spacer; cyan "Is this the correct file path? y/n:"
-  spacer; read  -n 1 -p "Input:" dir_check; spacer
+  cyan " ? Current file path: $current_dir"
+  cyan " ? Is this the correct file path? y/n:"
+  read  -n 1 -p "Input:" dir_check; spacer
   
   if [[ $dir_check == "n" || $dir_check == "N" ]]; then
-    spacer; yellow "WARNING: Incorrect file path! Exiting..."
+    spacer; yellow " - WARNING: Incorrect file path! Exiting..."
     exit
   elif [[ $dir_check == "y" || $dir_check == "Y" ]]; then
-    spacer; yellow "WARNING: Starting format process!"
+    spacer; yellow " - WARNING: Starting format process!"
   else
-    spacer; red "ERROR: Unknown input! Exiting..."
+    spacer; red " X - ERROR: Unknown input! Exiting..."
     exit
   fi
 
@@ -71,7 +71,7 @@ replace()
     done
   fi
   
-  spacer; green "Finished processing!"
+  green " > Finished processing!"
 }
 
 while getopts ":d:ch" arg

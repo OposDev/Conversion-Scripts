@@ -47,48 +47,48 @@ check_user_input()
   user_check=""
 
   if [[ -f "$links_location" ]]; then
-    green "$links_location exists!"
+    green " > $links_location exists!"
   else
-    spacer; red "$links_location does NOT exist! Please check your input..."
+    red " X - $links_location does NOT exist! Please check your input..."
     exit 1
   fi
   if [[ -f "$RA_location" ]]; then
-    green "$RA_location exists!"
+    green " > $RA_location exists!"
   else
-    spacer; red "$RA_location does NOT exist! Please check your input..."
+    red " X - $RA_location does NOT exist! Please check your input..."
     exit 1
   fi
   if [[ -f "$config_location" ]]; then
-    green "$config_location exists!"
+    green " > $config_location exists!"
   else
-    spacer; red "$config_location does NOT exist! Please check your input..."
+    red " X - $config_location does NOT exist! Please check your input..."
     exit 1
   fi
   if [[ -d "$download_path" ]]; then
-    green "$download_path exists!"
+    green " > $download_path exists!"
   else
-    spacer; red "$download_path does NOT exist! Please check your input..."
+    red " X - $download_path does NOT exist! Please check your input..."
     exit 1
   fi
 
   links_total=$(wc -l < "$links_location")
 
-  spacer; yellow "---------- Current information registered ---------- "
-  yellow "Total # of links: $links_total"
-  yellow "- Links file: $links_location"
-  yellow "- RedditArchiver file: $RA_location"
-  yellow "- RedditArchiver config file: $config_location"
-  yellow "- Download path: $download_path"
-  spacer; cyan "Are these the correct input(s)? y/n:"
+  spacer; yellow "CURRENT INFORMATION REGISTERED:"
+  yellow " - Total # of links: $links_total"
+  yellow " -- Links file: $links_location"
+  yellow " -- RedditArchiver file: $RA_location"
+  yellow " -- RedditArchiver config file: $config_location"
+  yellow " -- Download path: $download_path"
+  cyan " ? Are these the correct input(s)? y/n:"
   read -n 1 -p "Input:" user_check; spacer 
   
   if [[ $user_check == "n" || $user_check == "N" ]]; then
-    spacer; yellow "WARNING: Cancelled! Exiting..."
+    spacer; yellow " - WARNING: Cancelled! Exiting..."
     exit 1
   elif [[ $user_check == "y" || $user_check == "Y" ]]; then
-    spacer; yellow "WARNING: Starting download process!"
+    spacer; yellow " - WARNING: Starting download process!"
   else
-    spacer; red "ERROR: Unknown input! Exiting..."
+    spacer; red " X - ERROR: Unknown input! Exiting..."
     exit 1
   fi
 }
@@ -122,7 +122,7 @@ process_links()
   counter=1
 
   while IFS='' read -r LineFromFile || [[ -n "${LineFromFile}" ]]; do
-    green "Current link: $counter / $links_total"
+    green " > Current link: $counter / $links_total"
     process_line "$LineFromFile"
     ((counter+=1))
   done < "$links_location"
@@ -173,7 +173,7 @@ EOL
 done
 
 clear
-green "Starting archiving process..."
+yellow "STARTING ARCHIVING PROCESS..."
 
 main()
 {

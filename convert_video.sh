@@ -68,11 +68,11 @@ EOL
 # Checks inputs of user
 check_input()
 {
-  spacer; yellow "Checking input formats..."
+  spacer; yellow "CHECKING INPUT FORMATS..."
   if [[ "$select" == "1" || "$select" == "2" || "$select" == "3" || "$select" == "4" || "$select" == "5" || "$select" == "6" ]]; then
-    spacer; green "$select is a valid format, continuing..."
+    green " > $select is a valid format, continuing..."
   else
-    spacer; red "ERROR: Invalid input format! Exiting..."
+    red " X - ERROR: Invalid input format! Exiting..."
     exit 1
   fi
 }
@@ -84,29 +84,29 @@ check_filepath()
   tmp_dir=$(cd "$directory" && pwd)
 
   if ! [[ -d "$directory" ]]; then
-    spacer; red "Selected directory dooes not exist! Exiting..."
+    red " X - Selected directory dooes not exist! Exiting..."
     exit 1
   fi
   
   if [[ "$remove" == true ]]; then
-    spacer; red "WARNING: Remove flag set to: $remove!"
+    yellow " - WARNING: Remove flag set to: $remove!"
   else
-    spacer; green "Remove flag set to: $remove!"
+    green " > Remove flag set to: $remove!"
   fi
 
-  spacer; cyan "Current selected option: $select"
-  spacer; cyan "Selected file path: $tmp_dir"
-  spacer; cyan "Is the information that is currently displayed, correct? y/n:"
-  spacer; read  -n 1 -p "Input:" check; spacer
+  cyan " ? Current selected option: $select"
+  cyan " ? Selected file path: $tmp_dir"
+  cyan " ? Is the information that is currently displayed, correct? y/n:"
+  read  -n 1 -p "Input:" check; spacer
   
   if [[ $check == "n" || $check == "N" ]]; then
-    spacer; yellow "WARNING: Incorrect file path! Exiting..."
+    spacer; yellow " - WARNING: Incorrect file path! Exiting..."
     exit
   elif [[ $check == "y" || $check == "Y" ]]; then
-    spacer; yellow "WARNING: Starting format process!"
+    spacer; yellow " - WARNING: Starting format process!"
     cd "$script_dir" || exit 1
   else
-    spacer; red "ERROR: Unknown input! Exiting..."
+    spacer; red " X - ERROR: Unknown input! Exiting..."
     exit
   fi
 }
@@ -129,7 +129,7 @@ distribute()
   elif [[ "$select" == "6" ]]; then
     input_format="mov"
   else
-    spacer; red "ERROR: Unknown! Check distribute(), review ASAP!"
+    red " X - ERROR: Unknown! Check distribute(), review ASAP!"
     exit 1
   fi
 
@@ -351,12 +351,12 @@ EOL
 done
 
 clear
-green "Starting program..."
+yellow  "STARTING PROGRAM..."
 
 main()
 {
   if (( num_cores < 1 )); then
-    spacer; red "No CPU cores detected! Something is wrong, ending program..."
+    spacer; red " X - No CPU cores detected! Something is wrong, ending program..."
     exit 1
   fi
 
