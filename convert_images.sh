@@ -86,7 +86,7 @@ check_output()
 # Checks current selected dir & display selected information
 check_filepath()
 {
-  spacer;
+  spacer; yellow "CHECKING USER INPUT..."
   check="n"
   tmp_dir=$(cd "$directory" && pwd)
 
